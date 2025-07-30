@@ -28,12 +28,27 @@
                 <select id="airport-select" aria-label="Seleccionar aeropuerto"></select>
             </div>
         </div>
+
         <section id="flight-management-section" class="content-card hidden">
             <h2 id="airport-name-title"></h2>
+
+            <!-- FORMULARIO PARA AÑADIR VUELOS -->
             <form id="add-flight-form" novalidate>
                  <h3><i class="fas fa-plus-circle"></i>Añadir Nuevo Vuelo</h3>
-                <div class="form-group"><label for="flight-number">Número de Vuelo</label><input type="text" id="flight-number" required placeholder="Ej: IB345"></div>
-                <div class="form-group"><label for="destination">Destino</label><input type="text" id="destination" required placeholder="Ej: Roma"></div>
+                 <div class="form-grid">
+                    <div class="form-group">
+                        <label for="flight-number">Número de Vuelo</label>
+                        <input type="text" id="flight-number" required placeholder="Ej: IB345">
+                    </div>
+                    <div class="form-group">
+                        <label for="company-input">Compañía</label>
+                        <input type="text" id="company-input" required placeholder="Ej: Iberia">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="destination">Destino</label>
+                    <input type="text" id="destination" required placeholder="Ej: Roma">
+                </div>
                 <div class="form-grid">
                     <div class="form-group"><label for="departure-date">Día de Salida</label><input type="date" id="departure-date" required></div>
                     <div class="form-group"><label for="departure-time">Hora de Salida</label><input type="time" id="departure-time" required></div>
@@ -43,23 +58,53 @@
                     <div class="form-group"><label for="arrival-time">Hora de Llegada</label><input type="time" id="arrival-time" required></div>
                 </div>
                 <div class="form-actions-container">
-                    <button type="submit" class="cta-button"><i class="fas fa-paper-plane"></i>Añadir Vuelo</button>
-                    <button type="button" id="show-flights-btn" class="secondary-button"><i class="fas fa-search"></i>Mostrar Vuelos</button>
+                    <button type="submit" class="cta-button" style="grid-column: 1 / -1;"><i class="fas fa-paper-plane"></i>Añadir Vuelo</button>
                 </div>
             </form>
+
+            <!-- SECCIÓN DE LA LISTA DE VUELOS -->
             <section id="flight-list-section">
                 <h3><i class="fas fa-list-ul"></i>Vuelos Programados</h3>
+
+                <fieldset class="filter-fieldset">
+                    <legend>Filtrar Vuelos</legend>
+                    <div class="filter-grid">
+                        <div class="form-group">
+                            <label for="filter-destination">Destino</label>
+                            <input type="text" id="filter-destination" placeholder="Cualquier destino">
+                        </div>
+                        <div class="form-group">
+                            <label for="filter-arrival-time">Hora de Llegada (exacta)</label>
+                            <input type="time" id="filter-arrival-time">
+                        </div>
+                        <div class="form-group">
+                            <label for="filter-company">Compañía</label>
+                            <input type="text" id="filter-company" placeholder="Cualquier compañía">
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="list-actions-container">
+                    <button type="button" id="filter-flights-btn" class="cta-button"><i class="fas fa-search"></i> Filtrar</button>
+                    <button type="button" id="show-flights-btn" class="secondary-button"><i class="fas fa-list-ul"></i>Mostrar Todos</button>
+                </div>
+                
                 <ul id="flight-list"></ul>
-                 <p id="no-flights-message" class="hidden">No hay vuelos para mostrar. Añada un vuelo y luego pulse "Mostrar Vuelos".</p>
+                <p id="no-flights-message" class="hidden">No hay vuelos para mostrar.</p>
             </section>
         </section>
     </main>
+
+    <!-- MODAL DE COMPRA -->
     <div id="purchase-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"></div>
+
+    <!-- POPUP INFORMATIVO -->
     <div id="info-popup" class="info-popup">
         <button id="info-popup-close" class="close-button" title="Cerrar">×</button>
         <h3><i class="fas fa-info-circle"></i>Pago en Efectivo</h3>
         <p>Al seleccionar "Efectivo", estás realizando una <strong>reserva</strong>. Deberás completar el pago en el mostrador para asegurar tu billete.</p>
     </div>
+    
     <script src="../script.js"></script>
 </body>
 </html>
