@@ -66,11 +66,24 @@ input:focus, select:focus {
 }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
 .form-group .error-message { color: var(--danger-color); font-size: 0.85rem; display: none; margin-top: 0.25rem; }
-.form-group.invalid input { border-color: var(--danger-color); }
+.form-group.invalid input, .form-group.invalid select { border-color: var(--danger-color); }
 .form-group.invalid .error-message { display: block; }
-.form-group.valid input { border-color: var(--success-color); }
-fieldset { border: 1px solid #ddd; border-radius: var(--border-radius); padding: 1rem; }
-legend { font-weight: 600; padding: 0 0.5rem; color: var(--text-color-light); }
+.form-group.valid input, .form-group.valid select { border-color: var(--success-color); }
+
+/* --- Contenedores de Acciones --- */
+.form-actions-container {
+    display: grid;
+    grid-template-columns: 1fr; 
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.list-actions-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
 
 /* --- Botones --- */
 .cta-button {
@@ -78,9 +91,6 @@ legend { font-weight: 600; padding: 0 0.5rem; color: var(--text-color-light); }
     font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: all var(--transition-speed); display: inline-block; width: 100%;
 }
 .cta-button:hover { background-color: var(--primary-color-dark); transform: translateY(-2px); box-shadow: var(--shadow-light); }
-.form-actions-container {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem;
-}
 .secondary-button {
     background-color: var(--secondary-color); color: #ffffff; border: none; padding: 0.9rem 1.5rem;
     border-radius: var(--border-radius); font-size: 1.1rem; font-weight: bold; cursor: pointer;
@@ -93,8 +103,31 @@ legend { font-weight: 600; padding: 0 0.5rem; color: var(--text-color-light); }
 }
 .buy-button:hover { background-color: var(--success-color-buy-dark); transform: scale(1.05); }
 
-/* --- Lista de Vuelos --- */
-#flight-list-section h3 { margin-top: 2rem; }
+/* --- Lista de Vuelos y Filtros --- */
+#flight-list-section {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #eee;
+}
+.filter-fieldset {
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background-color: #f9f9f9;
+}
+.filter-fieldset legend {
+    font-weight: 600;
+    padding: 0 0.5rem;
+    color: var(--text-color-light);
+    font-size: 1.1rem;
+}
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+    gap: 1.5rem;
+}
+
 #flight-list { list-style-type: none; padding: 0; margin-top: 1.5rem; display: grid; gap: 1rem; }
 .flight-card {
     background-color: #fff; padding: 1.5rem; border-radius: var(--border-radius);
@@ -108,24 +141,17 @@ legend { font-weight: 600; padding: 0 0.5rem; color: var(--text-color-light); }
 .detail-item { display: flex; align-items: center; }
 .detail-item i { color: var(--info-color); font-size: 1.2rem; }
 
-/* --- MODAL Y POP-UPS --- */
+/* --- Modal y Pop-ups --- */
 .modal {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000;
     opacity: 0; pointer-events: none; transition: opacity var(--transition-speed);
 }
 .modal.visible { opacity: 1; pointer-events: auto; }
-
-/* **AQUÍ ESTÁ LA CORRECCIÓN CLAVE** */
 .modal-content {
     background: #fff; padding: 2.5rem; width: 90%; max-width: 500px; box-shadow: var(--shadow-strong);
     border-radius: var(--border-radius); position: relative; transform: scale(0.95); transition: transform var(--transition-speed);
-    
-    /* 1. Limita la altura máxima para que no se salga de la pantalla */
-    max-height: 90vh; 
-    
-    /* 2. Añade una barra de scroll vertical SÓLO si es necesario */
-    overflow-y: auto; 
+    max-height: 90vh; overflow-y: auto; 
 }
 .modal.visible .modal-content { transform: scale(1); }
 .close-button {
@@ -134,9 +160,7 @@ legend { font-weight: 600; padding: 0 0.5rem; color: var(--text-color-light); }
     line-height: 1; font-weight: bold; color: #333;
     cursor: pointer; transition: all 0.2s ease; z-index: 10;
 }
-.close-button:hover {
-    color: var(--danger-color); transform: scale(1.1);
-}
+.close-button:hover { color: var(--danger-color); transform: scale(1.1); }
 .popup-icon { font-size: 4rem; margin-bottom: 1rem; display: block; }
 .info-popup {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
@@ -147,8 +171,11 @@ legend { font-weight: 600; padding: 0 0.5rem; color: var(--text-color-light); }
 }
 .info-popup.visible { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
 .info-popup h3 { color: var(--info-color); margin-top: 0; }
+
+/* --- Media Queries --- */
 @media (max-width: 600px) {
     .container { margin: 1rem; padding: 1.5rem; }
-    .form-grid, .form-actions-container { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
     .flight-card { grid-template-columns: 1fr; }
+    .list-actions-container { grid-template-columns: 1fr; }
 }
