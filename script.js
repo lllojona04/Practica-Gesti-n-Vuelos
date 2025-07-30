@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- REFERENCIAS AL DOM ---
+    // --- ELEMENTOS DEL DOM ---
     const airportSelect = document.getElementById('airport-select');
     const flightManagementSection = document.getElementById('flight-management-section');
     const airportNameTitle = document.getElementById('airport-name-title');
@@ -10,16 +10,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const purchaseModal = document.getElementById('purchase-modal');
     const infoPopup = document.getElementById('info-popup');
     const infoPopupClose = document.getElementById('info-popup-close');
-    const showFlightsBtn = document.getElementById('show-flights-btn');
 
-     // --- DATOS Y ESTADO ---
+    // --- FILTROS Y BOTONES ---
+    const showFlightsBtn = document.getElementById('show-flights-btn');
+    const filterFlightsBtn = document.getElementById('filter-flights-btn');
+    const companyInput = document.getElementById('company-input');
+    const filterDestination = document.getElementById('filter-destination');
+    const filterArrivalTime = document.getElementById('filter-arrival-time');
+    const filterCompany = document.getElementById('filter-company');
+
+    // --- DATOS ---
     const airportsData = {
-        "Asturias": "Aeropuerto de Asturias", "Barcelona": "Aeropuerto Josep Tarradellas Barcelona-El Prat",
-        "Bilbao": "Aeropuerto de Bilbao", "Madrid": "Aeropuerto Adolfo Suárez Madrid-Barajas",
-        "Málaga": "Aeropuerto de Málaga-Costa del Sol", "Santander": "Aeropuerto Seve Ballesteros"
+        "Asturias": "Aeropuerto de Asturias",
+        "Barcelona": "Aeropuerto Josep Tarradellas Barcelona-El Prat",
+        "Bilbao": "Aeropuerto de Bilbao",
+        "Madrid": "Aeropuerto Adolfo Suárez Madrid-Barajas",
+        "Málaga": "Aeropuerto de Málaga-Costa del Sol",
+        "Santander": "Aeropuerto Seve Ballesteros"
     };
-    let state = { flights: [], selectedAirport: null, currentFlightForPurchase: null };
-    
+
+    const state = {
+        flights: [], // La lista de vuelos que se está mostrando actualmente
+        sampleFlights: [], // Una copia de solo los vuelos de ejemplo
+        selectedAirport: null,
+        currentFlightForPurchase: null,
+        showingSampleFlights: false // Controla si los vuelos de ejemplo están visibles
+    };
+
     // --- INICIALIZACIÓN ---
     function init() {
         populateAirportSelector();
@@ -28,101 +45,238 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function populateAirportSelector() {
         airportSelect.innerHTML = '<option value="" disabled selected>-- Elija un aeropuerto --</option>';
-        Object.keys(airportsData).forEach(key => {
-            const option = document.createElement("option");
-            option.value = key; option.textContent = key;
+        // --- CORRECCIÓN: Usar Object.keys para iterar de forma más segura ---
+        Object.keys(airportsData).forEach(airportKey => {
+            const option = document.createElement('option');
+            option.value = airportKey;
+            option.textContent = airportKey;
             airportSelect.appendChild(option);
         });
     }
-    
+
     function setupEventListeners() {
         airportSelect.addEventListener('change', handleAirportChange);
         addFlightForm.addEventListener('submit', handleAddFlightSubmit);
         infoPopupClose.addEventListener('click', () => infoPopup.classList.remove('visible'));
-        showFlightsBtn.addEventListener('click', renderFlights);
+        showFlightsBtn.addEventListener('click', handleToggleSampleFlights);
+        filterFlightsBtn.addEventListener('click', handleFilterFlights);
     }
 
-    // --- MANEJADORES DE EVENTOS ---
+    // --- CAMBIO DE AEROPUERTO ---
     function handleAirportChange() {
         state.selectedAirport = airportSelect.value;
-        if (state.selectedAirport) {
-            airportNameTitle.innerHTML = `<i class="fas fa-plane-departure"></i> ${airportsData[state.selectedAirport]}`;
-            flightManagementSection.classList.remove('hidden');
-            flightManagementSection.classList.add('fade-in');
-            state.flights = [];
-            flightList.innerHTML = '';
-            noFlightsMessage.textContent = 'No hay vuelos para mostrar. Añada un vuelo y luego pulse "Mostrar Vuelos".';
-            noFlightsMessage.classList.remove('hidden');
-            addFlightForm.reset();
-            addFlightForm.querySelector('input').focus();
-        } else {
-             flightManagementSection.classList.add('hidden');
+        if (!state.selectedAirport) {
+            flightManagementSection.classList.add('hidden');
+            return;
         }
-    }
 
-    function handleAddFlightSubmit(e) {
-        e.preventDefault();
-        const depDate = document.getElementById('departure-date').value, depTime = document.getElementById('departure-time').value,
-              arrDate = document.getElementById('arrival-date').value, arrTime = document.getElementById('arrival-time').value;
-        const newFlight = {
-            id: Date.now(), number: document.getElementById('flight-number').value.trim(), destination: document.getElementById('destination').value.trim(),
-            depDate, depTime, arrDate, arrTime, duration: calculateFlightDuration(depDate, depTime, arrDate, arrTime), isNew: true
-        };
-        if (Object.values(newFlight).some(v => v === "" || v === null)) return alert("Por favor, rellene todos los campos.");
-        if (newFlight.duration.includes("Error")) return alert("La fecha de llegada no puede ser anterior a la de salida.");
-        
-        state.flights.push(newFlight);
-        alert(`Vuelo ${newFlight.number.toUpperCase()} añadido correctamente.\nPulse "Mostrar Vuelos" para actualizar la lista.`);
+        airportNameTitle.innerHTML = `<i class="fas fa-plane-departure"></i> ${airportsData[state.selectedAirport]}`;
+        flightManagementSection.classList.remove('hidden');
+        flightManagementSection.classList.add('fade-in');
+
+        loadSampleFlights();
+        state.flights = []; // La lista de vuelos visibles comienza vacía
+        state.showingSampleFlights = false;
+        showFlightsBtn.innerHTML = '<i class="fas fa-list-ul"></i> Mostrar Todos';
+
+        clearFilters();
+        renderFlights([]); // Renderiza la lista vacía para mostrar el mensaje inicial
         addFlightForm.reset();
         document.getElementById('flight-number').focus();
     }
 
-    // --- RENDERIZADO DEL DOM ---
-    function renderFlights() {
+    function clearFilters() {
+        filterDestination.value = '';
+        filterArrivalTime.value = '';
+        filterCompany.value = '';
+    }
+
+    // --- TOGGLE: MOSTRAR/OCULTAR VUELOS ---
+    function handleToggleSampleFlights() {
+        clearFilters();
+        state.showingSampleFlights = !state.showingSampleFlights;
+
+        if (state.showingSampleFlights) {
+            // Combina los vuelos de ejemplo con los que el usuario haya podido añadir
+            const userAddedFlights = state.flights.filter(f => f.isUserAdded);
+            state.flights = [...state.sampleFlights, ...userAddedFlights];
+            showFlightsBtn.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar Todos';
+        } else {
+            // Oculta solo los de ejemplo, pero mantiene los que el usuario añadió
+            state.flights = state.flights.filter(f => f.isUserAdded);
+            showFlightsBtn.innerHTML = '<i class="fas fa-list-ul"></i> Mostrar Todos';
+        }
+
+        renderFlights(state.flights);
+    }
+
+    function loadSampleFlights() {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        const formatDate = (date) => date.toISOString().split('T')[0];
+
+        state.sampleFlights = [
+            { id: 1, number: 'IB501', company: 'Iberia', destination: 'Madrid', depDate: formatDate(tomorrow), depTime: '10:00', arrDate: formatDate(tomorrow), arrTime: '11:15', duration: '1h 15m' },
+            { id: 2, number: 'IB505', company: 'Iberia', destination: 'Valencia', depDate: formatDate(tomorrow), depTime: '12:00', arrDate: formatDate(tomorrow), arrTime: '13:20', duration: '1h 20m' },
+            { id: 3, number: 'VY210', company: 'Vueling', destination: 'Barcelona', depDate: formatDate(tomorrow), depTime: '11:30', arrDate: formatDate(tomorrow), arrTime: '12:45', duration: '1h 15m' },
+            { id: 4, number: 'UX330', company: 'Air Europa', destination: 'Barcelona', depDate: formatDate(tomorrow), depTime: '14:00', arrDate: formatDate(tomorrow), arrTime: '15:10', duration: '1h 10m' },
+            { id: 5, number: 'FR112', company: 'Ryanair', destination: 'Oporto', depDate: formatDate(tomorrow), depTime: '18:00', arrDate: formatDate(tomorrow), arrTime: '19:00', duration: '1h 00m' },
+            { id: 6, number: 'EZ888', company: 'EasyJet', destination: 'Londres', depDate: formatDate(tomorrow), depTime: '18:00', arrDate: formatDate(tomorrow), arrTime: '19:30', duration: '2h 30m' },
+            { id: 7, number: 'LH610', company: 'Lufthansa', destination: 'Frankfurt', depDate: formatDate(tomorrow), depTime: '07:00', arrDate: formatDate(tomorrow), arrTime: '09:30', duration: '2h 30m' },
+            { id: 8, number: 'AE444', company: 'Air Europa', destination: 'París', depDate: formatDate(tomorrow), depTime: '07:15', arrDate: formatDate(tomorrow), arrTime: '09:30', duration: '2h 15m' },
+        ];
+    }
+
+    // --- AÑADIR VUELO ---
+    function handleAddFlightSubmit(e) {
+        e.preventDefault();
+
+        const newFlight = {
+            id: Date.now(),
+            number: document.getElementById('flight-number').value.trim(),
+            company: companyInput.value.trim(),
+            destination: document.getElementById('destination').value.trim(),
+            depDate: document.getElementById('departure-date').value,
+            depTime: document.getElementById('departure-time').value,
+            arrDate: document.getElementById('arrival-date').value,
+            arrTime: document.getElementById('arrival-time').value,
+            duration: calculateFlightDuration(
+                document.getElementById('departure-date').value,
+                document.getElementById('departure-time').value,
+                document.getElementById('arrival-date').value,
+                document.getElementById('arrival-time').value
+            ),
+            isNew: true,
+            isUserAdded: true // --- CORRECCIÓN: Marcar que este vuelo es del usuario ---
+        };
+
+        if (!newFlight.number || !newFlight.company || !newFlight.destination || !newFlight.depDate || !newFlight.depTime || !newFlight.arrDate || !newFlight.arrTime) {
+            return alert("Por favor, rellene todos los campos.");
+        }
+
+        if (newFlight.duration.includes("Error")) {
+            return alert("La fecha de llegada no puede ser anterior a la de salida.");
+        }
+
+        // --- CORRECCIÓN: Los vuelos nuevos se añaden a la lista principal, no a la de ejemplos ---
+        state.flights.push(newFlight);
+
+        clearFilters();
+        renderFlights(state.flights);
+        alert(`Vuelo ${newFlight.number.toUpperCase()} añadido correctamente.`);
+        addFlightForm.reset();
+        document.getElementById('flight-number').focus();
+    }
+
+    // --- FILTRAR VUELOS ---
+    function handleFilterFlights() {
+        const destination = filterDestination.value.trim().toLowerCase();
+        const arrivalTime = filterArrivalTime.value;
+        const company = filterCompany.value.trim().toLowerCase();
+
+        // --- CORRECCIÓN: Se debe filtrar siempre sobre la lista de vuelos actualmente visible. ---
+        let filteredFlights = state.flights;
+
+        // --- CORRECCIÓN DE SINTAXIS Y LÓGICA: Se eliminó el bloque duplicado ---
+        if (destination) {
+            filteredFlights = filteredFlights.filter(flight =>
+                flight.destination.toLowerCase().includes(destination)
+            );
+        }
+
+        if (arrivalTime) {
+            filteredFlights = filteredFlights.filter(flight =>
+                flight.arrTime === arrivalTime
+            );
+        }
+
+        if (company) {
+            filteredFlights = filteredFlights.filter(flight =>
+                flight.company.toLowerCase().includes(company)
+            );
+        }
+
+        renderFlights(filteredFlights);
+    }
+
+    // --- RENDERIZAR LISTA DE VUELOS ---
+    function renderFlights(flightsToDisplay) {
         flightList.innerHTML = '';
-        const flightsToDisplay = state.flights;
 
         if (flightsToDisplay.length === 0) {
-            noFlightsMessage.textContent = "No hay vuelos programados. Añada uno para empezar.";
+            let message = "Añada un vuelo o pulse 'Mostrar Todos'.";
+            if (filterDestination.value || filterArrivalTime.value || filterCompany.value) {
+                message = "No se encontraron vuelos que coincidan con los filtros.";
+            } else if (!state.showingSampleFlights && state.flights.length === 0) {
+                message = "Pulse 'Mostrar Todos' para ver los vuelos de ejemplo.";
+            }
+            noFlightsMessage.textContent = message;
             noFlightsMessage.classList.remove('hidden');
-        } else {
-            noFlightsMessage.classList.add('hidden');
+            return; // Detener la ejecución aquí
         }
         
+        noFlightsMessage.classList.add('hidden');
+
         flightsToDisplay.forEach(flight => {
             const li = document.createElement('li');
             li.className = 'flight-card';
+
             if (flight.isNew) {
                 li.classList.add('new-item');
-                delete flight.isNew;
+                setTimeout(() => {
+                    li.classList.remove('new-item');
+                    delete flight.isNew;
+                }, 500);
             }
+
             li.innerHTML = `
                 <div class="flight-main-info">
-                    <h4>Vuelo ${flight.number.toUpperCase()}</h4>
+                    <h4>Vuelo ${flight.number.toUpperCase()} <span style="font-weight:normal; color: #555;">(${flight.company})</span></h4>
                     <div class="flight-route">
                         <span>${state.selectedAirport}</span> <i class="fas fa-plane"></i> <span>${flight.destination}</span>
                     </div>
                     <div class="flight-details-grid">
-                        <div class="detail-item"><i class="fas fa-calendar-alt"></i> ${flight.depDate}</div>
-                        <div class="detail-item"><i class="fas fa-clock"></i> ${flight.depTime}</div>
+                        <div class="detail-item"><i class="fas fa-plane-departure"></i> ${flight.depTime}</div>
+                        <div class="detail-item"><i class="fas fa-plane-arrival"></i> ${flight.arrTime}</div>
                         <div class="detail-item"><i class="fas fa-hourglass-half"></i> ${flight.duration}</div>
                     </div>
                 </div>
                 <div class="flight-actions">
-                    <button class="buy-button" data-flight-id="${flight.id}"><i class="fas fa-ticket-alt"></i>Comprar Billete</button>
+                    <button class="buy-button" data-flight-id="${flight.id}">
+                        <i class="fas fa-ticket-alt"></i> Comprar Billete
+                    </button>
                 </div>
             `;
+
             li.querySelector('.buy-button').addEventListener('click', () => {
                 state.currentFlightForPurchase = flight;
                 openPurchaseModal();
             });
+
             flightList.appendChild(li);
         });
     }
 
-    // --- LÓGICA DEL MODAL DE COMPRA Y FUNCIONES DE UTILIDAD ---
-    function handlePurchaseSubmit(e){e.preventDefault();const t=e.target,o=t.querySelector("#passenger-name").value.trim(),a=t.querySelector("#passenger-email").value.trim(),r=t.querySelector("#passenger-dni").value.trim(),n=t.querySelector('input[name="payment-method"]:checked');let i=!0;o||(setInvalid(t.querySelector("#passenger-name"),"El nombre es obligatorio."),i=!1),a||(setInvalid(t.querySelector("#passenger-email"),"El email es obligatorio."),i=!1),isValidDNI(r)||(setInvalid(t.querySelector("#passenger-dni"),"Formato de DNI no válido."),i=!1),n||(alert("Seleccione un método de pago."),i=!1),i&&showPurchaseSuccessScreen({name:o,email:a,dni:r,paymentMethod:n.value})}
+    // --- CÁLCULO DE DURACIÓN DEL VUELO ---
+    function calculateFlightDuration(depDate, depTime, arrDate, arrTime) {
+        const dep = new Date(`${depDate}T${depTime}`);
+        const arr = new Date(`${arrDate}T${arrTime}`);
+
+        if (isNaN(dep) || isNaN(arr)) return "N/A";
+        const durationMs = arr - dep;
+
+        if (durationMs < 0) return "Error";
+
+        const hours = Math.floor(durationMs / 3600000);
+        const minutes = Math.floor((durationMs % 3600000) / 60000);
+        return `${hours}h ${minutes}m`;
+    }
+
+    // --- MODAL DE COMPRA ---
+    // (Tu código existente para el modal se mantiene aquí)
     function openPurchaseModal(){purchaseModal.innerHTML=createPurchaseFormHTML(),purchaseModal.classList.add("visible");let e=!1;const t=purchaseModal.querySelector("#ticket-form");t.addEventListener("submit",handlePurchaseSubmit),purchaseModal.querySelector(".close-button").addEventListener("click",closePurchaseModal),t.querySelectorAll('input[name="payment-method"]').forEach(t=>{t.addEventListener("change",()=>{t.checked&&"Efectivo"===t.value&&!e&&(infoPopup.classList.add("visible"),e=!0)})}),["passenger-name","passenger-email","passenger-dni"].forEach(e=>{const o=t.querySelector(`#${e}`);o.addEventListener("input",()=>"passenger-dni"===e?validateDNIField(o):validateRequiredField(o,"Este campo es obligatorio."))}),t.querySelector("#passenger-name").focus()}
+    function handlePurchaseSubmit(e){e.preventDefault();const t=e.target,o=t.querySelector("#passenger-name").value.trim(),a=t.querySelector("#passenger-email").value.trim(),r=t.querySelector("#passenger-dni").value.trim(),n=t.querySelector('input[name="payment-method"]:checked');let i=!0;o||(setInvalid(t.querySelector("#passenger-name"),"El nombre es obligatorio."),i=!1),a||(setInvalid(t.querySelector("#passenger-email"),"El email es obligatorio."),i=!1),isValidDNI(r)||(setInvalid(t.querySelector("#passenger-dni"),"Formato de DNI no válido."),i=!1),n||(alert("Seleccione un método de pago."),i=!1),i&&showPurchaseSuccessScreen({name:o,email:a,dni:r,paymentMethod:n.value})}
     const closePurchaseModal=()=>{purchaseModal.classList.remove("visible"),purchaseModal.innerHTML=""};
     function createPurchaseFormHTML(){const e=state.currentFlightForPurchase;return`
             <div class="modal-content">
@@ -145,7 +299,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 </form>
             </div>`}
     function showPurchaseSuccessScreen(e){const t="Efectivo"===e.paymentMethod,o=t?'<i class="fas fa-clock popup-icon" style="color:var(--info-color);"></i>':'<i class="fas fa-check-circle popup-icon" style="color:var(--success-color);"></i>',a=t?"¡Reserva Confirmada!":"¡Compra Realizada con Éxito!",r=t?`<p>Pague en nuestro mostrador antes de las <strong>${getPaymentDeadline(state.currentFlightForPurchase.depDate,state.currentFlightForPurchase.depTime)}</strong>.</p>`:`<p>Se ha enviado una confirmación a <strong>${e.email}</strong>.</p>`,n=t?"Descargar Reserva":"Descargar Compra";purchaseModal.innerHTML=`<div class="modal-content" style="text-align: center;"><button class="close-button" title="Cerrar">×</button>${o}<h2>${a}</h2><p>Gracias, <strong>${e.name}</strong>.</p>${r}<button id="download-receipt-btn" class="cta-button"><i class="fas fa-download"></i>${n}</button></div>`,purchaseModal.querySelector(".close-button").addEventListener("click",closePurchaseModal),purchaseModal.querySelector("#download-receipt-btn").addEventListener("click",()=>{generateAndDownloadReceipt(e,state.currentFlightForPurchase),closePurchaseModal()})}
-    function generateAndDownloadReceipt(e,t){const o="Efectivo"===e.paymentMethod,a=`==== ${o?"COMPROBANTE DE RESERVA":"COMPROBANTE DE COMPRA"} ====`,r=o?"Efectivo (Pendiente de pago en aeropuerto)":`${e.paymentMethod} (Pagado)`,n=`${a}\nFecha de Emisión: ${new Date().toLocaleString("es-ES")}\n\n--- Pasajero ---\nNombre: ${e.name}\nDNI: ${e.dni}\nEmail: ${e.email}\n\n--- Vuelo ---\nNúmero: ${t.number.toUpperCase()}\nOrigen: ${airportsData[state.selectedAirport]}\nDestino: ${t.destination}\nSalida: ${t.depDate} ${t.depTime}\nLlegada: ${t.arrDate} ${t.arrTime}\nDuración: ${t.duration}\n\n--- Pago ---\nMétodo: ${r}\n\nGracias por volar con nosotros.`,i=new Blob([n.trim()],{type:"text/plain;charset=utf-8"}),l=document.createElement("a");l.href=URL.createObjectURL(i),l.download=`comprobante_vuelo_${t.number}.txt`,l.click(),URL.revokeObjectURL(l.href)}const calculateFlightDuration=(e,t,o,a)=>{const r=new Date(`${e}T${t}`),n=new Date(`${o}T${a}`);if(isNaN(r)||isNaN(n))return"N/A";let i=n-r;if(i<0)return"Error";const l=Math.floor(i/36e5),s=Math.floor(i%36e5/6e4);return`${l}h ${s}m`},getPaymentDeadline=(e,t)=>{const o=new Date(`${e}T${t}`);return isNaN(o)?"N/A":(o.setHours(o.getHours()-2),o.toLocaleString("es-ES",{timeStyle:"short"}))},isValidDNI=e=>/^[0-9]{8}[A-Za-z]$/.test(e.trim()),setInvalid=(e,t)=>{const o=e.parentElement;o.classList.add("invalid"),o.classList.remove("valid"),o.querySelector(".error-message").textContent=t},setValid=e=>{const t=e.parentElement;t.classList.remove("invalid"),t.classList.add("valid")},validateDNIField=e=>isValidDNI(e.value)?setValid(e):setInvalid(e,"DNI no válido (ej: 12345678A)."),validateRequiredField=(e,t)=>""!==e.value.trim()?setValid(e):setInvalid(e,t);document.addEventListener("keydown",e=>{"Escape"===e.key&&(infoPopup.classList.remove("visible"),purchaseModal.classList.contains("visible")&&closePurchaseModal())}),purchaseModal.addEventListener("click",e=>{e.target===purchaseModal&&closePurchaseModal()});
+    function generateAndDownloadReceipt(e,t){const o="Efectivo"===e.paymentMethod,a=`==== ${o?"COMPROBANTE DE RESERVA":"COMPROBANTE DE COMPRA"} ====`,r=o?"Efectivo (Pendiente de pago en aeropuerto)":`${e.paymentMethod} (Pagado)`,n=`${a}\nFecha de Emisión: ${new Date().toLocaleString("es-ES")}\n\n--- Pasajero ---\nNombre: ${e.name}\nDNI: ${e.dni}\nEmail: ${e.email}\n\n--- Vuelo ---\nNúmero: ${t.number.toUpperCase()}\nOrigen: ${airportsData[state.selectedAirport]}\nDestino: ${t.destination}\nSalida: ${t.depDate} ${t.depTime}\nLlegada: ${t.arrDate} ${t.arrTime}\nDuración: ${t.duration}\n\n--- Pago ---\nMétodo: ${r}\n\nGracias por volar con nosotros.`,i=new Blob([n.trim()],{type:"text/plain;charset=utf-8"}),l=document.createElement("a");l.href=URL.createObjectURL(i),l.download=`comprobante_vuelo_${t.number}.txt`,l.click(),URL.revokeObjectURL(l.href)}
+    function setInvalid(e,t){const o=e.parentElement;o.classList.add("invalid"),o.classList.remove("valid"),o.querySelector(".error-message").textContent=t}
+    function setValid(e){const t=e.parentElement;t.classList.remove("invalid"),t.classList.add("valid")}
+    function isValidDNI(e){return/^[0-9]{8}[A-Za-z]$/.test(e.trim())}
+    function validateDNIField(e){isValidDNI(e.value)?setValid(e):setInvalid(e,"DNI no válido (ej: 12345678A).")}
+    function validateRequiredField(e,t){""!==e.value.trim()?setValid(e):setInvalid(e,t)}
 
+    // --- ATALHOS DE TECLADO Y CIERRE DE MODALES ---
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            infoPopup.classList.remove('visible');
+            if (purchaseModal.classList.contains('visible')) {
+                closePurchaseModal();
+            }
+        }
+    });
+
+    purchaseModal.addEventListener('click', (e) => {
+        if (e.target === purchaseModal) {
+            closePurchaseModal();
+        }
+    });
+
+    // --- EJECUTAR INICIALIZACIÓN ---
     init();
 });
