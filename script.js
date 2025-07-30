@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const state = {
         flights: [], // La lista de vuelos que se está mostrando actualmente
         sampleFlights: [], // Una copia de solo los vuelos de ejemplo
+        userAddedFlights: [], // Una lista separada para los vuelos del usuario
         selectedAirport: null,
         currentFlightForPurchase: null,
         showingSampleFlights: false // Controla si los vuelos de ejemplo están visibles
@@ -45,7 +46,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function populateAirportSelector() {
         airportSelect.innerHTML = '<option value="" disabled selected>-- Elija un aeropuerto --</option>';
-        // --- CORRECCIÓN: Usar Object.keys para iterar de forma más segura ---
         Object.keys(airportsData).forEach(airportKey => {
             const option = document.createElement('option');
             option.value = airportKey;
@@ -75,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         flightManagementSection.classList.add('fade-in');
 
         loadSampleFlights();
+        state.userAddedFlights = []; // Resetea vuelos de usuario
         state.flights = []; // La lista de vuelos visibles comienza vacía
         state.showingSampleFlights = false;
         showFlightsBtn.innerHTML = '<i class="fas fa-list-ul"></i> Mostrar Todos';
@@ -97,16 +98,14 @@ document.addEventListener('DOMContentLoaded', () => {
         state.showingSampleFlights = !state.showingSampleFlights;
 
         if (state.showingSampleFlights) {
-            // Combina los vuelos de ejemplo con los que el usuario haya podido añadir
-            const userAddedFlights = state.flights.filter(f => f.isUserAdded);
-            state.flights = [...state.sampleFlights, ...userAddedFlights];
+            // Al mostrar, combina los de ejemplo con los del usuario
+            state.flights = [...state.sampleFlights, ...state.userAddedFlights];
             showFlightsBtn.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar Todos';
         } else {
-            // Oculta solo los de ejemplo, pero mantiene los que el usuario añadió
-            state.flights = state.flights.filter(f => f.isUserAdded);
+            // Al ocultar, muestra solo los del usuario
+            state.flights = [...state.userAddedFlights];
             showFlightsBtn.innerHTML = '<i class="fas fa-list-ul"></i> Mostrar Todos';
         }
-
         renderFlights(state.flights);
     }
 
@@ -147,8 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('arrival-date').value,
                 document.getElementById('arrival-time').value
             ),
-            isNew: true,
-            isUserAdded: true // --- CORRECCIÓN: Marcar que este vuelo es del usuario ---
+            isNew: true
         };
 
         if (!newFlight.number || !newFlight.company || !newFlight.destination || !newFlight.depDate || !newFlight.depTime || !newFlight.arrDate || !newFlight.arrTime) {
@@ -159,8 +157,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return alert("La fecha de llegada no puede ser anterior a la de salida.");
         }
 
-        // --- CORRECCIÓN: Los vuelos nuevos se añaden a la lista principal, no a la de ejemplos ---
-        state.flights.push(newFlight);
+        state.userAddedFlights.push(newFlight); // Añade el vuelo a la lista persistente de usuario
+        
+        // Actualiza la lista visible para que el nuevo vuelo aparezca
+        if (state.showingSampleFlights) {
+            state.flights = [...state.sampleFlights, ...state.userAddedFlights];
+        } else {
+            state.flights = [...state.userAddedFlights];
+        }
 
         clearFilters();
         renderFlights(state.flights);
@@ -175,10 +179,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const arrivalTime = filterArrivalTime.value;
         const company = filterCompany.value.trim().toLowerCase();
 
-        // --- CORRECCIÓN: Se debe filtrar siempre sobre la lista de vuelos actualmente visible. ---
-        let filteredFlights = state.flights;
+        // Determina la lista base sobre la que se va a filtrar
+        let sourceFlights;
+        if (state.showingSampleFlights) {
+             sourceFlights = [...state.sampleFlights, ...state.userAddedFlights];
+        } else {
+             sourceFlights = [...state.userAddedFlights];
+        }
 
-        // --- CORRECCIÓN DE SINTAXIS Y LÓGICA: Se eliminó el bloque duplicado ---
+        let filteredFlights = sourceFlights;
+        
+        // Aplica cada filtro de forma consecutiva
         if (destination) {
             filteredFlights = filteredFlights.filter(flight =>
                 flight.destination.toLowerCase().includes(destination)
@@ -196,8 +207,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 flight.company.toLowerCase().includes(company)
             );
         }
-
-        renderFlights(filteredFlights);
+        
+        // Actualiza la lista visible con los resultados del filtro
+        state.flights = filteredFlights;
+        renderFlights(state.flights);
     }
 
     // --- RENDERIZAR LISTA DE VUELOS ---
@@ -206,14 +219,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (flightsToDisplay.length === 0) {
             let message = "Añada un vuelo o pulse 'Mostrar Todos'.";
-            if (filterDestination.value || filterArrivalTime.value || filterCompany.value) {
+            // Lógica de mensaje mejorada
+            const filtersAreActive = filterDestination.value || filterArrivalTime.value || filterCompany.value;
+            if (filtersAreActive) {
                 message = "No se encontraron vuelos que coincidan con los filtros.";
-            } else if (!state.showingSampleFlights && state.flights.length === 0) {
+            } else if (!state.showingSampleFlights) {
                 message = "Pulse 'Mostrar Todos' para ver los vuelos de ejemplo.";
             }
             noFlightsMessage.textContent = message;
             noFlightsMessage.classList.remove('hidden');
-            return; // Detener la ejecución aquí
+            return;
         }
         
         noFlightsMessage.classList.add('hidden');
@@ -273,9 +288,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${hours}h ${minutes}m`;
     }
 
-    // --- MODAL DE COMPRA ---
-    // (Tu código existente para el modal se mantiene aquí)
-    function openPurchaseModal(){purchaseModal.innerHTML=createPurchaseFormHTML(),purchaseModal.classList.add("visible");let e=!1;const t=purchaseModal.querySelector("#ticket-form");t.addEventListener("submit",handlePurchaseSubmit),purchaseModal.querySelector(".close-button").addEventListener("click",closePurchaseModal),t.querySelectorAll('input[name="payment-method"]').forEach(t=>{t.addEventListener("change",()=>{t.checked&&"Efectivo"===t.value&&!e&&(infoPopup.classList.add("visible"),e=!0)})}),["passenger-name","passenger-email","passenger-dni"].forEach(e=>{const o=t.querySelector(`#${e}`);o.addEventListener("input",()=>"passenger-dni"===e?validateDNIField(o):validateRequiredField(o,"Este campo es obligatorio."))}),t.querySelector("#passenger-name").focus()}
+    // --- MODAL DE COMPRA Y FUNCIONES ASOCIADAS (sin cambios) ---
+    function openPurchaseModal(){purchaseModal.innerHTML=createPurchaseFormHTML();purchaseModal.classList.add("visible");let e=!1;const t=purchaseModal.querySelector("#ticket-form");t.addEventListener("submit",handlePurchaseSubmit),purchaseModal.querySelector(".close-button").addEventListener("click",closePurchaseModal),t.querySelectorAll('input[name="payment-method"]').forEach(t=>{t.addEventListener("change",()=>{t.checked&&"Efectivo"===t.value&&!e&&(infoPopup.classList.add("visible"),e=!0)})}),["passenger-name","passenger-email","passenger-dni"].forEach(e=>{const o=t.querySelector(`#${e}`);o.addEventListener("input",()=>"passenger-dni"===e?validateDNIField(o):validateRequiredField(o,"Este campo es obligatorio."))}),t.querySelector("#passenger-name").focus()}
     function handlePurchaseSubmit(e){e.preventDefault();const t=e.target,o=t.querySelector("#passenger-name").value.trim(),a=t.querySelector("#passenger-email").value.trim(),r=t.querySelector("#passenger-dni").value.trim(),n=t.querySelector('input[name="payment-method"]:checked');let i=!0;o||(setInvalid(t.querySelector("#passenger-name"),"El nombre es obligatorio."),i=!1),a||(setInvalid(t.querySelector("#passenger-email"),"El email es obligatorio."),i=!1),isValidDNI(r)||(setInvalid(t.querySelector("#passenger-dni"),"Formato de DNI no válido."),i=!1),n||(alert("Seleccione un método de pago."),i=!1),i&&showPurchaseSuccessScreen({name:o,email:a,dni:r,paymentMethod:n.value})}
     const closePurchaseModal=()=>{purchaseModal.classList.remove("visible"),purchaseModal.innerHTML=""};
     function createPurchaseFormHTML(){const e=state.currentFlightForPurchase;return`
@@ -300,6 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`}
     function showPurchaseSuccessScreen(e){const t="Efectivo"===e.paymentMethod,o=t?'<i class="fas fa-clock popup-icon" style="color:var(--info-color);"></i>':'<i class="fas fa-check-circle popup-icon" style="color:var(--success-color);"></i>',a=t?"¡Reserva Confirmada!":"¡Compra Realizada con Éxito!",r=t?`<p>Pague en nuestro mostrador antes de las <strong>${getPaymentDeadline(state.currentFlightForPurchase.depDate,state.currentFlightForPurchase.depTime)}</strong>.</p>`:`<p>Se ha enviado una confirmación a <strong>${e.email}</strong>.</p>`,n=t?"Descargar Reserva":"Descargar Compra";purchaseModal.innerHTML=`<div class="modal-content" style="text-align: center;"><button class="close-button" title="Cerrar">×</button>${o}<h2>${a}</h2><p>Gracias, <strong>${e.name}</strong>.</p>${r}<button id="download-receipt-btn" class="cta-button"><i class="fas fa-download"></i>${n}</button></div>`,purchaseModal.querySelector(".close-button").addEventListener("click",closePurchaseModal),purchaseModal.querySelector("#download-receipt-btn").addEventListener("click",()=>{generateAndDownloadReceipt(e,state.currentFlightForPurchase),closePurchaseModal()})}
     function generateAndDownloadReceipt(e,t){const o="Efectivo"===e.paymentMethod,a=`==== ${o?"COMPROBANTE DE RESERVA":"COMPROBANTE DE COMPRA"} ====`,r=o?"Efectivo (Pendiente de pago en aeropuerto)":`${e.paymentMethod} (Pagado)`,n=`${a}\nFecha de Emisión: ${new Date().toLocaleString("es-ES")}\n\n--- Pasajero ---\nNombre: ${e.name}\nDNI: ${e.dni}\nEmail: ${e.email}\n\n--- Vuelo ---\nNúmero: ${t.number.toUpperCase()}\nOrigen: ${airportsData[state.selectedAirport]}\nDestino: ${t.destination}\nSalida: ${t.depDate} ${t.depTime}\nLlegada: ${t.arrDate} ${t.arrTime}\nDuración: ${t.duration}\n\n--- Pago ---\nMétodo: ${r}\n\nGracias por volar con nosotros.`,i=new Blob([n.trim()],{type:"text/plain;charset=utf-8"}),l=document.createElement("a");l.href=URL.createObjectURL(i),l.download=`comprobante_vuelo_${t.number}.txt`,l.click(),URL.revokeObjectURL(l.href)}
+    function getPaymentDeadline(e,t){const o=new Date(`${e}T${t}`);return isNaN(o)?"N/A":(o.setHours(o.getHours()-2),o.toLocaleString("es-ES",{timeStyle:"short"}))}
     function setInvalid(e,t){const o=e.parentElement;o.classList.add("invalid"),o.classList.remove("valid"),o.querySelector(".error-message").textContent=t}
     function setValid(e){const t=e.parentElement;t.classList.remove("invalid"),t.classList.add("valid")}
     function isValidDNI(e){return/^[0-9]{8}[A-Za-z]$/.test(e.trim())}
@@ -315,7 +330,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-
     purchaseModal.addEventListener('click', (e) => {
         if (e.target === purchaseModal) {
             closePurchaseModal();
