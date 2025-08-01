@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ];
     }
 
-    // --- AÑADIR VUELO ---
+    // --- AÑADIR VUELO (FUNCIÓN MODIFICADA) ---
     function handleAddFlightSubmit(e) {
         e.preventDefault();
         
@@ -158,6 +158,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return alert("La fecha de llegada no puede ser anterior a la de salida.");
         }
 
+        // --- INICIO DE LA MODIFICACIÓN ---
+        // 1. Capturamos el número de vuelos ANTES de añadir el nuevo.
+        const flightsBefore = state.flights.length;
+        
         state.userAddedFlights.push(newFlight);
 
         if (state.showingSampleFlights) {
@@ -166,9 +170,16 @@ document.addEventListener('DOMContentLoaded', () => {
             state.flights = [...state.userAddedFlights];
         }
 
+        // 2. El número de vuelos DESPUÉS ya está actualizado en el estado.
+        const flightsAfter = state.flights.length;
+
         clearFilters();
         renderFlights(state.flights);
-        alert(`Vuelo ${newFlight.number.toUpperCase()} añadido correctamente.`);
+
+        // 3. Mostramos el nuevo alert personalizado.
+        alert(`¡Vuelo añadido! En la lista tenías ${flightsBefore} vuelos. Ahora tienes ${flightsAfter}.`);
+        // --- FIN DE LA MODIFICACIÓN ---
+
         addFlightForm.reset();
         document.getElementById('flight-number').focus();
     }
