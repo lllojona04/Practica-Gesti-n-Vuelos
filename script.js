@@ -114,14 +114,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const formatDate = (date) => date.toISOString().split('T')[0];
 
         state.sampleFlights = [
-            { id: 1, number: 'IB501', company: 'Iberia', destination: 'Madrid', depDate: formatDate(tomorrow), depTime: '10:00', arrDate: formatDate(tomorrow), arrTime: '11:15', duration: '1h 15m', basePrice: 110.00 },
-            { id: 2, number: 'IB505', company: 'Iberia', destination: 'Valencia', depDate: formatDate(tomorrow), depTime: '12:00', arrDate: formatDate(tomorrow), arrTime: '13:20', duration: '1h 20m', basePrice: 125.50 },
-            { id: 3, number: 'VY210', company: 'Vueling', destination: 'Barcelona', depDate: formatDate(tomorrow), depTime: '11:30', arrDate: formatDate(tomorrow), arrTime: '12:45', duration: '1h 15m', basePrice: 95.00 },
-            { id: 4, number: 'UX330', company: 'Air Europa', destination: 'Barcelona', depDate: formatDate(tomorrow), depTime: '14:00', arrDate: formatDate(tomorrow), arrTime: '15:10', duration: '1h 10m', basePrice: 105.00 },
-            { id: 5, number: 'FR112', company: 'Ryanair', destination: 'Oporto', depDate: formatDate(tomorrow), depTime: '18:00', arrDate: formatDate(tomorrow), arrTime: '19:00', duration: '1h 00m', basePrice: 45.00 },
-            { id: 6, number: 'EZ888', company: 'EasyJet', destination: 'Londres', depDate: formatDate(tomorrow), depTime: '18:00', arrDate: formatDate(tomorrow), arrTime: '19:30', duration: '2h 30m', basePrice: 180.00 },
-            { id: 7, number: 'LH610', company: 'Lufthansa', destination: 'Frankfurt', depDate: formatDate(tomorrow), depTime: '07:00', arrDate: formatDate(tomorrow), arrTime: '09:30', duration: '2h 30m', basePrice: 210.00 },
-            { id: 8, number: 'AE444', company: 'Air Europa', destination: 'París', depDate: formatDate(tomorrow), depTime: '07:15', arrDate: formatDate(tomorrow), arrTime: '09:30', duration: '2h 15m', basePrice: 190.75 },
+            { id: 1, number: 'IBA5012', company: 'Iberia', destination: 'Madrid', depDate: formatDate(tomorrow), depTime: '10:00', arrDate: formatDate(tomorrow), arrTime: '11:15', duration: '1h 15m', basePrice: 110.00 },
+            { id: 2, number: 'IBA5016', company: 'Iberia', destination: 'Valencia', depDate: formatDate(tomorrow), depTime: '12:00', arrDate: formatDate(tomorrow), arrTime: '13:20', duration: '1h 20m', basePrice: 125.50 },
+            { id: 3, number: 'VYC2100', company: 'Vueling', destination: 'Barcelona', depDate: formatDate(tomorrow), depTime: '11:30', arrDate: formatDate(tomorrow), arrTime: '12:45', duration: '1h 15m', basePrice: 95.00 },
+            { id: 4, number: 'UXZ3309', company: 'Air Europa', destination: 'Barcelona', depDate: formatDate(tomorrow), depTime: '14:00', arrDate: formatDate(tomorrow), arrTime: '15:10', duration: '1h 10m', basePrice: 105.00 },
+            { id: 5, number: 'FRQ1126', company: 'Ryanair', destination: 'Oporto', depDate: formatDate(tomorrow), depTime: '18:00', arrDate: formatDate(tomorrow), arrTime: '19:00', duration: '1h 00m', basePrice: 45.00 },
+            { id: 6, number: 'EZR8888', company: 'EasyJet', destination: 'Londres', depDate: formatDate(tomorrow), depTime: '18:00', arrDate: formatDate(tomorrow), arrTime: '19:30', duration: '2h 30m', basePrice: 180.00 },
+            { id: 7, number: 'LHW6107', company: 'Lufthansa', destination: 'Frankfurt', depDate: formatDate(tomorrow), depTime: '07:00', arrDate: formatDate(tomorrow), arrTime: '09:30', duration: '2h 30m', basePrice: 210.00 },
+            { id: 8, number: 'AEI4444', company: 'Air Europa', destination: 'París', depDate: formatDate(tomorrow), depTime: '07:15', arrDate: formatDate(tomorrow), arrTime: '09:30', duration: '2h 15m', basePrice: 190.75 },
         ];
     }
 
