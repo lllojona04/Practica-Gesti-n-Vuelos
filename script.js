@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ];
     }
 
-    // --- AÑADIR VUELO (FUNCIÓN MODIFICADA) ---
+    // --- AÑADIR VUELO ---
     function handleAddFlightSubmit(e) {
         e.preventDefault();
         
@@ -157,9 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (newFlight.duration.includes("Error")) {
             return alert("La fecha de llegada no puede ser anterior a la de salida.");
         }
-
-        // --- INICIO DE LA MODIFICACIÓN ---
-        // 1. Capturamos el número de vuelos ANTES de añadir el nuevo.
+        
         const flightsBefore = state.flights.length;
         
         state.userAddedFlights.push(newFlight);
@@ -170,16 +168,13 @@ document.addEventListener('DOMContentLoaded', () => {
             state.flights = [...state.userAddedFlights];
         }
 
-        // 2. El número de vuelos DESPUÉS ya está actualizado en el estado.
         const flightsAfter = state.flights.length;
 
         clearFilters();
         renderFlights(state.flights);
 
-        // 3. Mostramos el nuevo alert personalizado.
         alert(`¡Vuelo añadido! En la lista tenías ${flightsBefore} vuelos. Ahora tienes ${flightsAfter}.`);
-        // --- FIN DE LA MODIFICACIÓN ---
-
+        
         addFlightForm.reset();
         document.getElementById('flight-number').focus();
     }
@@ -318,9 +313,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+        // --- MODIFICADO --- Se añade 'validateEmailField' para la validación en tiempo real.
         ["passenger-name", "passenger-email", "passenger-dni"].forEach(id => {
             const input = ticketForm.querySelector(`#${id}`);
-            input.addEventListener("input", () => id === "passenger-dni" ? validateDNIField(input) : validateRequiredField(input, "Este campo es obligatorio."));
+            input.addEventListener("input", () => {
+                if (id === "passenger-dni") {
+                    validateDNIField(input);
+                } else if (id === "passenger-email") {
+                    validateEmailField(input);
+                } else {
+                    validateRequiredField(input, "Este campo es obligatorio.");
+                }
+            });
         });
 
         ticketForm.querySelector("#passenger-name").focus();
@@ -328,21 +332,31 @@ document.addEventListener('DOMContentLoaded', () => {
         updateCharCounter();
     }
 
+    // --- MODIFICADO --- Se añade la validación del formato de email.
     function handlePurchaseSubmit(e) {
         e.preventDefault();
         const form = e.target;
-        const name = form.querySelector("#passenger-name").value.trim();
-        const email = form.querySelector("#passenger-email").value.trim();
-        const dni = form.querySelector("#passenger-dni").value.trim();
+        const nameInput = form.querySelector("#passenger-name");
+        const emailInput = form.querySelector("#passenger-email");
+        const dniInput = form.querySelector("#passenger-dni");
+        
+        const name = nameInput.value.trim();
+        const email = emailInput.value.trim();
+        const dni = dniInput.value.trim();
         const paymentMethod = form.querySelector('input[name="payment-method"]:checked');
         const passengerClass = form.querySelector("#passenger-class").value;
         const comment = form.querySelector("#passenger-comment").value.trim();
         const finalPrice = form.querySelector("#final-price-display").textContent;
 
         let isValid = true;
-        if (!name) { setInvalid(form.querySelector("#passenger-name"), "El nombre es obligatorio."); isValid = false; }
-        if (!email) { setInvalid(form.querySelector("#passenger-email"), "El email es obligatorio."); isValid = false; }
-        if (!isValidDNI(dni)) { setInvalid(form.querySelector("#passenger-dni"), "Formato de DNI no válido."); isValid = false; }
+        // Validación de campos
+        if (!name) { setInvalid(nameInput, "El nombre es obligatorio."); isValid = false; }
+        if (!email) { 
+            setInvalid(emailInput, "El email es obligatorio."); isValid = false; 
+        } else if (!isValidEmail(email)) {
+            setInvalid(emailInput, "El formato del correo electrónico no es válido."); isValid = false;
+        }
+        if (!isValidDNI(dni)) { setInvalid(dniInput, "Formato de DNI no válido."); isValid = false; }
         if (!paymentMethod) { alert("Seleccione un método de pago."); isValid = false; }
 
         if (isValid) {
@@ -358,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
         purchaseModal.innerHTML = "";
     };
     
-    // HTML del formulario de compra actualizado
+    // HTML del formulario de compra (sin cambios, pero se incluye por completitud)
     function createPurchaseFormHTML() {
         const flight = state.currentFlightForPurchase;
         return `
@@ -375,7 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="passenger-email">Correo Electrónico</label>
-                            <input type="email" id="passenger-email" required><div class="error-message"></div>
+                            <input type="email" id="passenger-email" required placeholder="correo@dominio.com"><div class="error-message"></div>
                         </div>
                         <div class="form-group">
                             <label for="passenger-dni">DNI</label>
@@ -400,7 +414,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <label><input type="radio" name="payment-method" value="Bizum"> Bizum</label>
                     </fieldset>
 
-                    <!-- CAMPO DE COMENTARIO ACTUALIZADO -->
                     <div class="form-group">
                         <label for="passenger-comment">Comentario / pregunta 
                             <span id="char-counter" style="float: right; font-size: 0.8rem; color: #6c757d; font-weight: normal;">120 caracteres restantes</span>
@@ -408,7 +421,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <textarea id="passenger-comment" rows="4" maxlength="120" placeholder="Si tiene alguna petición especial, escríbala aquí..."></textarea>
                     </div>
 
-                    <!-- PRECIO FINAL REUBICADO -->
                     <div style="text-align: right; margin-top: 1.5rem; padding: 1rem; background-color: #f8f9fa; border-radius: 8px;">
                         <span style="font-size: 1rem; color: #555; vertical-align: middle;">Precio Final:</span>
                         <span id="final-price-display" style="font-size: 2rem; font-weight: bold; color: var(--primary-color); vertical-align: middle; margin-left: 10px;">0.00 €</span>
@@ -419,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
     }
 
-    // Pantalla de éxito y generación de recibo actualizados
+    // Pantalla de éxito y generación de recibo (sin cambios)
     function showPurchaseSuccessScreen(purchaseData) {
         const isCash = purchaseData.paymentMethod === "Efectivo";
         const icon = isCash ? '<i class="fas fa-clock popup-icon" style="color:var(--info-color);"></i>' : '<i class="fas fa-check-circle popup-icon" style="color:var(--success-color);"></i>';
@@ -491,20 +503,43 @@ Gracias por volar con nosotros.
     }
 
     function setInvalid(input, message) {
-        const formGroup = input.parentElement;
-        formGroup.classList.add("invalid");
-        formGroup.classList.remove("valid");
-        formGroup.querySelector(".error-message").textContent = message;
+        const formGroup = input.closest(".form-group");
+        if (formGroup) {
+            formGroup.classList.add("invalid");
+            formGroup.classList.remove("valid");
+            const errorElement = formGroup.querySelector(".error-message");
+            if (errorElement) errorElement.textContent = message;
+        }
     }
 
     function setValid(input) {
-        const formGroup = input.parentElement;
-        formGroup.classList.remove("invalid");
-        formGroup.classList.add("valid");
+        const formGroup = input.closest(".form-group");
+        if (formGroup) {
+            formGroup.classList.remove("invalid");
+            formGroup.classList.add("valid");
+        }
+    }
+
+    // --- NUEVO --- Función para validar el formato de email con una expresión regular.
+    function isValidEmail(email) {
+        // Expresión regular simple para validar el formato de email.
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return regex.test(String(email).toLowerCase());
     }
 
     function isValidDNI(dni) {
         return /^[0-9]{8}[A-Za-z]$/.test(dni.trim());
+    }
+
+    // --- NUEVO --- Función para validar el campo de email en tiempo real.
+    function validateEmailField(input) {
+        if (input.value.trim() === "") {
+            setInvalid(input, "Este campo es obligatorio.");
+        } else if (!isValidEmail(input.value)) {
+            setInvalid(input, "Formato de email no válido (ej: correo@dominio.com).");
+        } else {
+            setValid(input);
+        }
     }
 
     function validateDNIField(input) {
@@ -532,4 +567,4 @@ Gracias por volar con nosotros.
 
     // --- EJECUTAR INICIALIZACIÓN ---
     init();
-});
+});```
