@@ -6,15 +6,44 @@
     <title>Sistema de Gestión de Vuelos</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E✈️%3C/text%3E%3C/svg%3E">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="../style.css">
-    <style>
-        .home-button-container { text-align: center; padding: 20px 0; }
-        .home-button {
-            padding: 10px 20px; font-size: 16px; background-color: #007bff; color: white;
-            border: none; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block;
-        }
-        .home-button:hover { background-color: #0056b3; }
-    </style>
+    <link rel="stylesheet" href="../style.css"> 
+   <!-- Pega o reemplaza esto dentro de la etiqueta <head> de tu archivo HTML -->
+<style>
+    /* Estilos para los campos de formulario para que se vean consistentes */
+    input[type="number"] {
+        width: 100%; padding: 0.8rem 1rem; border: 1px solid #ccc;
+        border-radius: 12px; font-size: 1rem; box-sizing: border-box;
+        background-color: #fdfdfd; color: #333; transition: all 0.3s ease-in-out;
+        font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    }
+    input[type="number"]:focus {
+        outline: none; border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+    }
+    
+    /* ESTILO ACTUALIZADO PARA EL TEXTAREA */
+    textarea {
+        width: 100%; padding: 0.8rem 1rem; border: 1px solid #ccc;
+        border-radius: 12px;
+        font-size: 1rem; box-sizing: border-box; background-color: #fdfdfd;
+        font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+        transition: all 0.3s ease-in-out;
+        /* La línea clave que deshabilita la redimensión */
+        resize: none; 
+    }
+    textarea:focus {
+        outline: none; border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+    }
+
+    /* Estilos adicionales del HTML original */
+    .home-button-container { text-align: center; padding: 20px 0; }
+    .home-button {
+        padding: 10px 20px; font-size: 16px; background-color: #007bff; color: white;
+        border: none; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block;
+    }
+    .home-button:hover { background-color: #0056b3; }
+</style>
 </head>
 <body>
     <div class="home-button-container">
@@ -57,8 +86,14 @@
                     <div class="form-group"><label for="arrival-date">Día de Llegada</label><input type="date" id="arrival-date" required></div>
                     <div class="form-group"><label for="arrival-time">Hora de Llegada</label><input type="time" id="arrival-time" required></div>
                 </div>
+                
+                <div class="form-group">
+                    <label for="precio-base">Precio base (€)</label>
+                    <input type="number" step="0.01" id="precio-base" placeholder="100.00" required>
+                </div>
+
                 <div class="form-actions-container">
-                    <button type="submit" class="cta-button" style="grid-column: 1 / -1;"><i class="fas fa-paper-plane"></i>Añadir Vuelo</button>
+                    <button type="submit" class="cta-button"><i class="fas fa-paper-plane"></i>Añadir Vuelo</button>
                 </div>
             </form>
 
